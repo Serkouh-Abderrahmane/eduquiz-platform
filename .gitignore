@@ -1,0 +1,9 @@
+node_modules/
+database/eduquiz.db
+database/eduquiz.db-wal
+database/eduquiz.db-shm
+uploads/
+*.log
+.env
+.DS_Store
+Thumbs.db

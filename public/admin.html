@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduQuiz - Admin Panel</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/game.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; }
+
+    /* Layout */
+    .admin-layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .admin-sidebar { width: 260px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; transition: transform 0.3s ease; }
+    .admin-sidebar-header { padding: 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-logo { font-size: 1.3rem; font-weight: 800; color: #6C63FF; }
+    .sidebar-version { font-size: 11px; background: rgba(108,99,255,0.2); color: #6C63FF; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+    .admin-sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+    .nav-section { margin-bottom: 8px; }
+    .nav-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.3); padding: 12px 20px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6); transition: all 0.2s; cursor: pointer; border-radius: 0; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(108,99,255,0.15); color: #6C63FF; border-right: 3px solid #6C63FF; }
+    .nav-icon { font-size: 16px; width: 24px; text-align: center; }
+    .admin-sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #6C63FF, #FF6B9D); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .user-info { flex: 1; }
+    .user-name { font-size: 13px; font-weight: 700; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    /* Main Content */
+    .admin-main { flex: 1; margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; }
+    .admin-topbar { background: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 40; }
+    .sidebar-toggle { background: none; border: none; font-size: 20px; color: #666; display: none; padding: 4px; }
+    .page-title { font-size: 1.2rem; font-weight: 800; flex: 1; }
+    .topbar-actions { display: flex; gap: 10px; align-items: center; }
+    .admin-content { flex: 1; padding: 24px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; gap: 6px; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px; }
+    .btn-primary { background: linear-gradient(135deg, #6C63FF, #5A52E0); color: #fff; box-shadow: 0 2px 10px rgba(108,99,255,0.2); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(108,99,255,0.3); }
+    .btn-secondary { background: #FF6B9D; color: #fff; }
+    .btn-danger { background: #f44336; color: #fff; }
+    .btn-danger:hover { background: #d32f2f; }
+    .btn-success { background: #4CAF50; color: #fff; }
+    .btn-success:hover { background: #388E3C; }
+    .btn-ghost { background: transparent; color: #666; }
+    .btn-ghost:hover { background: #f0f2f5; }
+    .btn-outline { background: transparent; border: 2px solid #e0e0e0; color: #666; }
+    .btn-outline:hover { border-color: #6C63FF; color: #6C63FF; }
+
+    /* Cards */
+    .admin-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px; }
+    .admin-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .admin-card-header h3 { font-size: 1.1rem; font-weight: 700; }
+
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+    .stat-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+    .stat-card-value { font-size: 1.8rem; font-weight: 900; color: #333; margin-bottom: 4px; }
+    .stat-card-label { font-size: 13px; color: #888; font-weight: 600; }
+
+    /* Table */
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; border-bottom: 2px solid #f0f0f0; }
+    .admin-table td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f5f5f5; }
+    .admin-table tr:hover td { background: #fafbff; }
+    .admin-table .actions { display: flex; gap: 6px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-admin { background: #FCE4EC; color: #C62828; }
+    .badge-teacher { background: #E8F5E9; color: #2E7D32; }
+    .badge-student { background: #E3F2FD; color: #1565C0; }
+    .badge-easy { background: #E8F5E9; color: #2E7D32; }
+    .badge-medium { background: #FFF3E0; color: #E65100; }
+    .badge-hard { background: #FFEBEE; color: #C62828; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+    .admin-modal { max-width: 700px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .modal-close:hover { background: #f0f0f0; color: #333; }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+
+    /* Form */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; transition: border-color 0.2s; outline: none; font-family: inherit; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #6C63FF; box-shadow: 0 0 0 3px rgba(108,99,255,0.1); }
+    .form-textarea { min-height: 80px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-help { font-size: 12px; color: #999; margin-top: 4px; }
+
+    /* Loading */
+    .loading-state { display: flex; align-items: center; justify-content: center; padding: 40px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid #e0e0e0; border-top-color: #6C63FF; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state-text { font-size: 16px; font-weight: 600; }
+
+    /* Search */
+    .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .search-input { flex: 1; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; }
+    .search-input:focus { border-color: #6C63FF; }
+
+    /* Toast */
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.15); animation: toastIn 0.3s ease-out; min-width: 250px; }
+    .toast-success { background: linear-gradient(135deg, #4CAF50, #388E3C); }
+    .toast-error { background: linear-gradient(135deg, #f44336, #d32f2f); }
+    .toast-info { background: linear-gradient(135deg, #2196F3, #1976D2); }
+    .toast-out { animation: toastOut 0.3s ease-in forwards; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100px); } }
+
+    /* Tabs */
+    .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px; }
+    .tab-item { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .tab-item:hover { color: #333; }
+    .tab-item.active { color: #6C63FF; border-bottom-color: #6C63FF; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .admin-sidebar { transform: translateX(-100%); }
+      .admin-sidebar.open { transform: translateX(0); }
+      .admin-main { margin-left: 0; }
+      .sidebar-toggle { display: block; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .admin-table { font-size: 12px; }
+      .admin-table th, .admin-table td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <a href="/" class="sidebar-logo">🎓 EduQuiz</a>
+        <span class="sidebar-version">Admin</span>
+      </div>
+
+      <nav class="admin-sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a class="nav-item active" data-section="dashboard" onclick="AdminApp.navigate('dashboard')">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+          <a class="nav-item" data-section="activities" onclick="AdminApp.navigate('activities')">
+            <span class="nav-icon">📝</span> Activities
+          </a>
+          <a class="nav-item" data-section="questions" onclick="AdminApp.navigate('questions')">
+            <span class="nav-icon">❓</span> Questions
+          </a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Content</div>
+          <a class="nav-item" data-section="categories" onclick="AdminApp.navigate('categories')">
+            <span class="nav-icon">📂</span> Categories
+          </a>
+          <a class="nav-item" data-section="tags" onclick="AdminApp.navigate('tags')">
+            <span class="nav-icon">🏷️</span> Tags
+          </a>
+          <a class="nav-item" data-section="media" onclick="AdminApp.navigate('media')">
+            <span class="nav-icon">🖼️</span> Media Library
+          </a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">People</div>
+          <a class="nav-item" data-section="users" onclick="AdminApp.navigate('users')">
+            <span class="nav-icon">👥</span> Users
+          </a>
+          <a class="nav-item" data-section="assignments" onclick="AdminApp.navigate('assignments')">
+            <span class="nav-icon">📋</span> Assignments
+          </a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Gamification</div>
+          <a class="nav-item" data-section="badges" onclick="AdminApp.navigate('badges')">
+            <span class="nav-icon">🏅</span> Badges
+          </a>
+          <a class="nav-item" data-section="analytics" onclick="AdminApp.navigate('analytics')">
+            <span class="nav-icon">📈</span> Analytics
+          </a>
+        </div>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user">
+          <div class="user-avatar">👤</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-username">Admin</div>
+            <div class="user-role" id="sidebar-userrole">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="AdminApp.toggleSidebar()">☰</button>
+        <h2 class="page-title" id="page-title">Dashboard</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="AdminApp.navigate('activities'); setTimeout(() => AdminApp.openActivityEditor(), 100)">
+            + New Activity
+          </button>
+          <a href="/" class="btn btn-ghost btn-sm">← Back to Site</a>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="admin-content" id="admin-content">
+        <div id="content-area"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="admin-modal">
+    <div class="modal admin-modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Modal</h3>
+        <button class="modal-close" onclick="AdminApp.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    /* ========== Toast System ========== */
+    const Toast = {
+      container: null,
+      init() { this.container = document.getElementById('toast-container'); },
+      show(message, type = 'info', duration = 3000) {
+        if (!this.container) this.init();
+        if (!this.container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        this.container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('toast-out'); setTimeout(() => toast.remove(), 300); }, duration);
+      },
+      success(msg) { this.show(msg, 'success'); },
+      error(msg) { this.show(msg, 'error'); },
+      info(msg) { this.show(msg, 'info'); }
+    };
+
+    /* ========== API Stub ========== */
+    const API = {
+      _getUsers() { return JSON.parse(localStorage.getItem('eduquiz_users') || '[]'); },
+      _setUsers(u) { localStorage.setItem('eduquiz_users', JSON.stringify(u)); },
+      _getSession() { return JSON.parse(localStorage.getItem('eduquiz_session') || 'null'); },
+      _setSession(s) { localStorage.setItem('eduquiz_session', JSON.stringify(s)); },
+      _getActivities() {
+        const acts = JSON.parse(localStorage.getItem('eduquiz_activities') || 'null');
+        return acts || this._seedActivities();
+      },
+      _setActivities(a) { localStorage.setItem('eduquiz_activities', JSON.stringify(a)); },
+      _seedActivities() {
+        const activities = [
+          { id: 'act1', title: 'Animal Vocabulary', description: 'Learn names of animals', category: 'Vocabulary', icon: '🐾', color: '#4CAF50', difficulty: 'easy', question_count: 10, tags: ['animals', 'vocabulary'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Which animal says "Moo"?', options: ['Dog', 'Cat', 'Cow', 'Bird'], correct: 2, explanation: 'Cows say "Moo"!' },
+            { id: 'q2', type: 'multiple_choice', text: 'Which animal can fly?', options: ['Fish', 'Dog', 'Eagle', 'Snake'], correct: 2, explanation: 'Eagles can fly!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What do you call a baby dog?', options: ['Kitten', 'Puppy', 'Calf', 'Foal'], correct: 1, explanation: 'A baby dog is a puppy!' },
+            { id: 'q4', type: 'true_false', text: 'A cat has nine lives.', correct: true, explanation: 'Common saying!' },
+            { id: 'q5', type: 'multiple_choice', text: 'Which animal lives in water?', options: ['Lion', 'Eagle', 'Dolphin', 'Bear'], correct: 2, explanation: 'Dolphins live in the ocean!' }
+          ]},
+          { id: 'act2', title: 'Color Shapes', description: 'Colors and shapes', category: 'Colors & Shapes', icon: '🎨', color: '#FF6B9D', difficulty: 'easy', question_count: 8, tags: ['colors', 'shapes'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'What color is the sky?', options: ['Green', 'Blue', 'Red', 'Yellow'], correct: 1, explanation: 'Sky is blue!' },
+            { id: 'q2', type: 'multiple_choice', text: 'How many sides does a triangle have?', options: ['2', '3', '4', '5'], correct: 1, explanation: 'A triangle has 3 sides!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What color are bananas?', options: ['Red', 'Green', 'Yellow', 'Blue'], correct: 2, explanation: 'Bananas are yellow!' },
+            { id: 'q4', type: 'true_false', text: 'A circle has corners.', correct: false, explanation: 'No corners!' }
+          ]},
+          { id: 'act3', title: 'Numbers 1-20', description: 'Counting', category: 'Math', icon: '🔢', color: '#2196F3', difficulty: 'easy', question_count: 10, tags: ['numbers', 'math'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'What comes after 5?', options: ['4', '6', '7', '3'], correct: 1, explanation: '6!' },
+            { id: 'q2', type: 'multiple_choice', text: 'What is 3 + 4?', options: ['5', '6', '7', '8'], correct: 2, explanation: '3+4=7!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What is 10 - 3?', options: ['6', '7', '8', '5'], correct: 1, explanation: '10-3=7!' },
+            { id: 'q4', type: 'true_false', text: '7 is an odd number.', correct: true, explanation: 'Yes!' }
+          ]},
+          { id: 'act4', title: 'Grammar Basics', description: 'Grammar rules', category: 'Grammar', icon: '📝', color: '#FF9800', difficulty: 'medium', question_count: 8, tags: ['grammar', 'english'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Which is a noun?', options: ['Run', 'Beautiful', 'Apple', 'Quickly'], correct: 2, explanation: 'Apple is a noun!' },
+            { id: 'q2', type: 'multiple_choice', text: '"She ___ going to school."', options: ['is', 'are', 'am', 'be'], correct: 0, explanation: '"She is" is correct!' },
+            { id: 'q3', type: 'true_false', text: 'An adjective describes a noun.', correct: true, explanation: 'Yes!' }
+          ]},
+          { id: 'act5', title: 'Weather Words', description: 'Weather vocabulary', category: 'Vocabulary', icon: '🌤️', color: '#00BCD4', difficulty: 'medium', question_count: 8, tags: ['weather', 'vocabulary'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Water from clouds is:', options: ['Wind', 'Rain', 'Snow', 'Sun'], correct: 1, explanation: 'It\'s rain!' },
+            { id: 'q2', type: 'multiple_choice', text: 'Coldest season?', options: ['Summer', 'Spring', 'Winter', 'Fall'], correct: 2, explanation: 'Winter!' },
+            { id: 'q3', type: 'true_false', text: 'Thunder comes before lightning.', correct: false, explanation: 'Lightning first!' }
+          ]},
+          { id: 'act6', title: 'Solar System', description: 'Planets and space', category: 'Science', icon: '🪐', color: '#7C4DFF', difficulty: 'hard', question_count: 8, tags: ['science', 'space'], questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Closest planet to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], correct: 1, explanation: 'Mercury!' },
+            { id: 'q2', type: 'multiple_choice', text: 'How many planets?', options: ['7', '8', '9', '10'], correct: 1, explanation: '8 planets!' },
+            { id: 'q3', type: 'multiple_choice', text: 'Red Planet?', options: ['Jupiter', 'Venus', 'Mars', 'Saturn'], correct: 2, explanation: 'Mars!' },
+            { id: 'q4', type: 'true_false', text: 'The Sun is a star.', correct: true, explanation: 'Yes!' }
+          ]}
+        ];
+        this._setActivities(activities);
+        return activities;
+      },
+      _getTags() { return JSON.parse(localStorage.getItem('eduquiz_tags') || '["vocabulary","grammar","math","science","animals","colors","shapes","numbers","weather","space","english"]'); },
+      _setTags(t) { localStorage.setItem('eduquiz_tags', JSON.stringify(t)); },
+      _getAssignments() { return JSON.parse(localStorage.getItem('eduquiz_assignments') || '[]'); },
+      _setAssignments(a) { localStorage.setItem('eduquiz_assignments', JSON.stringify(a)); },
+      isLoggedIn() { return !!this._getSession(); },
+      getCurrentUser() { return this._getSession(); },
+      logout() { localStorage.removeItem('eduquiz_session'); }
+    };
+
+    /* ========== AdminApp ========== */
+    const AdminApp = {
+      currentSection: 'dashboard',
+
+      init() {
+        Toast.init();
+        const user = API.getCurrentUser();
+        if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
+          Toast.error('Access denied. Admin/Teacher only.');
+          setTimeout(() => window.location.href = '/', 1000);
+          return;
+        }
+        document.getElementById('sidebar-username').textContent = user.display_name || user.username;
+        document.getElementById('sidebar-userrole').textContent = user.role === 'admin' ? 'Administrator' : 'Teacher';
+        this.navigate('dashboard');
+      },
+
+      navigate(section) {
+        this.currentSection = section;
+        document.querySelectorAll('.nav-item').forEach(item => {
+          item.classList.toggle('active', item.dataset.section === section);
+        });
+        const titles = {
+          dashboard: 'Dashboard', activities: 'Activities', questions: 'Questions',
+          categories: 'Categories', tags: 'Tags', media: 'Media Library',
+          users: 'Users', assignments: 'Assignments', badges: 'Badges', analytics: 'Analytics'
+        };
+        document.getElementById('page-title').textContent = titles[section] || section;
+        this.renderSection(section);
+        // Close sidebar on mobile
+        document.getElementById('admin-sidebar').classList.remove('open');
+      },
+
+      toggleSidebar() {
+        document.getElementById('admin-sidebar').classList.toggle('open');
+      },
+
+      openModal(title, bodyHtml, footerHtml) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = bodyHtml;
+        document.getElementById('modal-footer').innerHTML = footerHtml || '';
+        document.getElementById('admin-modal').classList.add('show');
+      },
+
+      closeModal() {
+        document.getElementById('admin-modal').classList.remove('show');
+      },
+
+      renderSection(section) {
+        const container = document.getElementById('content-area');
+        const renderers = {
+          dashboard: () => this.renderDashboard(container),
+          activities: () => this.renderActivities(container),
+          questions: () => this.renderQuestions(container),
+          categories: () => this.renderCategories(container),
+          tags: () => this.renderTags(container),
+          media: () => this.renderMedia(container),
+          users: () => this.renderUsers(container),
+          assignments: () => this.renderAssignments(container),
+          badges: () => this.renderBadges(container),
+          analytics: () => this.renderAnalytics(container)
+        };
+        (renderers[section] || renderers.dashboard)();
+      },
+
+      /* ===== Dashboard ===== */
+      renderDashboard(container) {
+        const users = API._getUsers();
+        const activities = API._getActivities();
+        const totalStudents = users.filter(u => u.role === 'student').length;
+        const totalTeachers = users.filter(u => u.role === 'teacher').length;
+        const totalAdmins = users.filter(u => u.role === 'admin').length;
+        const totalQuestions = activities.reduce((sum, a) => sum + (a.questions ? a.questions.length : 0), 0);
+        const categories = [...new Set(activities.map(a => a.category))];
+
+        container.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#E3F2FD; color:#1976D2;">👥</div>
+              <div class="stat-card-value">${users.length}</div>
+              <div class="stat-card-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#E8F5E9; color:#388E3C;">📝</div>
+              <div class="stat-card-value">${activities.length}</div>
+              <div class="stat-card-label">Activities</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#FFF3E0; color:#F57C00;">❓</div>
+              <div class="stat-card-value">${totalQuestions}</div>
+              <div class="stat-card-label">Questions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#F3E5F5; color:#7B1FA2;">📂</div>
+              <div class="stat-card-value">${categories.length}</div>
+              <div class="stat-card-label">Categories</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="admin-card">
+              <div class="admin-card-header"><h3>User Breakdown</h3></div>
+              <div style="padding:0;">
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+                  <span style="font-size:14px;">👨‍🎓 Students</span>
+                  <span style="font-weight:700;">${totalStudents}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+                  <span style="font-size:14px;">👩‍🏫 Teachers</span>
+                  <span style="font-weight:700;">${totalTeachers}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;">
+                  <span style="font-size:14px;">🛠️ Admins</span>
+                  <span style="font-weight:700;">${totalAdmins}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header"><h3>Recent Users</h3></div>
+              <div>
+                ${users.slice(-5).reverse().map(u => `
+                  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#FF6B9D);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">${(u.display_name || u.username)[0].toUpperCase()}</div>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:600;">${u.display_name || u.username}</div>
+                      <div style="font-size:11px;color:#999;">${u.username}</div>
+                    </div>
+                    <span class="badge badge-${u.role}">${u.role}</span>
+                  </div>`).join('') || '<div style="padding:20px;text-align:center;color:#999;">No users yet</div>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-card" style="margin-top:20px;">
+            <div class="admin-card-header"><h3>Quick Actions</h3></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="AdminApp.navigate('activities'); setTimeout(() => AdminApp.openActivityEditor(), 100)">+ New Activity</button>
+              <button class="btn btn-outline" onclick="AdminApp.navigate('users')">Manage Users</button>
+              <button class="btn btn-outline" onclick="AdminApp.navigate('categories')">Manage Categories</button>
+              <button class="btn btn-outline" onclick="AdminApp.navigate('analytics')">View Analytics</button>
+              <button class="btn btn-ghost" onclick="AdminApp.exportData()">📦 Export Data</button>
+            </div>
+          </div>`;
+      },
+
+      /* ===== Activities ===== */
+      renderActivities(container) {
+        const activities = API._getActivities();
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>All Activities (${activities.length})</h3>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="search-input" placeholder="Search activities..." id="activity-search" oninput="AdminApp.filterActivities()" style="max-width:250px;">
+                <button class="btn btn-primary btn-sm" onclick="AdminApp.openActivityEditor()">+ New Activity</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="admin-table" id="activities-table">
+                <thead>
+                  <tr>
+                    <th>Activity</th>
+                    <th>Category</th>
+                    <th>Difficulty</th>
+                    <th>Questions</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${activities.map(act => `
+                    <tr data-search="${act.title.toLowerCase()} ${act.category.toLowerCase()} ${act.difficulty}">
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div style="width:36px;height:36px;border-radius:10px;background:${act.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;">${act.icon}</div>
+                          <div>
+                            <div style="font-weight:600;">${act.title}</div>
+                            <div style="font-size:12px;color:#999;">${act.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>${act.category}</td>
+                      <td><span class="badge badge-${act.difficulty}">${act.difficulty}</span></td>
+                      <td>${act.questions ? act.questions.length : 0}</td>
+                      <td>
+                        <div class="actions">
+                          <button class="btn btn-ghost btn-sm" onclick="AdminApp.editActivity('${act.id}')">✏️ Edit</button>
+                          <button class="btn btn-danger btn-sm" onclick="AdminApp.deleteActivity('${act.id}')">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+            ${activities.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">No activities yet. Create one!</div></div>' : ''}
+          </div>`;
+      },
+
+      filterActivities() {
+        const search = document.getElementById('activity-search').value.toLowerCase();
+        document.querySelectorAll('#activities-table tbody tr').forEach(row => {
+          row.style.display = row.dataset.search.includes(search) ? '' : 'none';
+        });
+      },
+
+      openActivityEditor(activityId) {
+        const activity = activityId ? API._getActivities().find(a => a.id === activityId) : null;
+        const isEdit = !!activity;
+        const title = isEdit ? 'Edit Activity' : 'New Activity';
+        const categories = [...new Set(API._getActivities().map(a => a.category))];
+        const icons = ['📚','🎨','🔢','📝','🌤️','🪐','🔬','🏛️','🌍','🎵','🏃','🧠'];
+        const colors = ['#4CAF50','#FF6B9D','#2196F3','#FF9800','#00BCD4','#7C4DFF','#E91E63','#795548','#607D8B','#F44336','#009688','#3F51B5'];
+
+        const bodyHtml = `
+          <form id="activity-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="act-title" value="${activity ? activity.title : ''}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <input type="text" class="form-input" id="act-category" value="${activity ? activity.category : ''}" list="category-list" required>
+                <datalist id="category-list">
+                  ${categories.map(c => `<option value="${c}">`).join('')}
+                </datalist>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <input type="text" class="form-input" id="act-description" value="${activity ? activity.description : ''}">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Icon</label>
+                <select class="form-select" id="act-icon">
+                  ${icons.map(i => `<option value="${i}" ${activity && activity.icon === i ? 'selected' : ''}>${i}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Color</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                  ${colors.map(c => `<div onclick="document.getElementById('act-color').value='${c}'; document.querySelectorAll('.color-opt').forEach(e=>e.style.outline='none'); this.style.outline='3px solid #333';" class="color-opt" style="width:32px;height:32px;border-radius:8px;background:${c};cursor:pointer;${activity && activity.color === c ? 'outline:3px solid #333' : ''}"></div>`).join('')}
+                </div>
+                <input type="hidden" id="act-color" value="${activity ? activity.color : '#4CAF50'}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Difficulty</label>
+                <select class="form-select" id="act-difficulty">
+                  <option value="easy" ${activity && activity.difficulty === 'easy' ? 'selected' : ''}>Easy</option>
+                  <option value="medium" ${activity && activity.difficulty === 'medium' ? 'selected' : ''}>Medium</option>
+                  <option value="hard" ${activity && activity.difficulty === 'hard' ? 'selected' : ''}>Hard</option>
+                  <option value="expert" ${activity && activity.difficulty === 'expert' ? 'selected' : ''}>Expert</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tags (comma-separated)</label>
+                <input type="text" class="form-input" id="act-tags" value="${activity && activity.tags ? activity.tags.join(', ') : ''}">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Questions (JSON format)</label>
+              <textarea class="form-textarea" id="act-questions" rows="8" placeholder='[{"type":"multiple_choice","text":"Question text?","options":["A","B","C","D"],"correct":0,"explanation":"Why"}]'>${activity && activity.questions ? JSON.stringify(activity.questions, null, 2) : '[]'}</textarea>
+              <div class="form-help">Each question needs: type (multiple_choice, true_false, fill_blank), text, correct, explanation. Multiple choice also needs options array.</div>
+            </div>
+          </form>`;
+
+        const footerHtml = `
+          <button class="btn btn-ghost" onclick="AdminApp.closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminApp.saveActivity('${activityId || ''}')">💾 ${isEdit ? 'Update' : 'Create'} Activity</button>`;
+
+        this.openModal(title, bodyHtml, footerHtml);
+      },
+
+      editActivity(id) { this.openActivityEditor(id); },
+
+      async saveActivity(existingId) {
+        const title = document.getElementById('act-title').value.trim();
+        const category = document.getElementById('act-category').value.trim();
+        const description = document.getElementById('act-description').value.trim();
+        const icon = document.getElementById('act-icon').value;
+        const color = document.getElementById('act-color').value;
+        const difficulty = document.getElementById('act-difficulty').value;
+        const tagsStr = document.getElementById('act-tags').value;
+        const questionsStr = document.getElementById('act-questions').value.trim();
+
+        if (!title || !category) { Toast.error('Title and category are required!'); return; }
+
+        let questions = [];
+        try {
+          questions = JSON.parse(questionsStr);
+          if (!Array.isArray(questions)) throw new Error();
+        } catch (e) {
+          Toast.error('Invalid JSON in questions field!'); return;
+        }
+
+        const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+        const activities = API._getActivities();
+
+        if (existingId) {
+          const idx = activities.findIndex(a => a.id === existingId);
+          if (idx >= 0) {
+            activities[idx] = { ...activities[idx], title, category, description, icon, color, difficulty, tags, questions, question_count: questions.length };
+          }
+        } else {
+          activities.push({
+            id: 'act_' + Date.now(),
+            title, category, description, icon, color, difficulty, tags, questions,
+            question_count: questions.length
+          });
+        }
+        API._setActivities(activities);
+        // Update tags
+        const existingTags = API._getTags();
+        tags.forEach(t => { if (!existingTags.includes(t)) existingTags.push(t); });
+        API._setTags(existingTags);
+        Toast.success(existingId ? 'Activity updated!' : 'Activity created!');
+        this.closeModal();
+        this.renderActivities(document.getElementById('content-area'));
+      },
+
+      deleteActivity(id) {
+        if (!confirm('Delete this activity? This cannot be undone.')) return;
+        const activities = API._getActivities().filter(a => a.id !== id);
+        API._setActivities(activities);
+        Toast.success('Activity deleted!');
+        this.renderActivities(document.getElementById('content-area'));
+      },
+
+      /* ===== Questions ===== */
+      renderQuestions(container) {
+        const activities = API._getActivities();
+        let allQuestions = [];
+        activities.forEach(act => {
+          (act.questions || []).forEach(q => {
+            allQuestions.push({ ...q, activityTitle: act.title, activityId: act.id, activityIcon: act.icon });
+          });
+        });
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>All Questions (${allQuestions.length})</h3>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="search-input" placeholder="Search questions..." id="question-search" oninput="AdminApp.filterQuestions()" style="max-width:250px;">
+                <select class="form-select" id="question-filter" onchange="AdminApp.filterQuestions()" style="max-width:200px;">
+                  <option value="">All Activities</option>
+                  ${activities.map(a => `<option value="${a.id}">${a.icon} ${a.title}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="admin-table" id="questions-table">
+                <thead>
+                  <tr><th>#</th><th>Question</th><th>Type</th><th>Activity</th><th>Correct Answer</th></tr>
+                </thead>
+                <tbody>
+                  ${allQuestions.map((q, idx) => {
+                    let correctText = '';
+                    if (q.type === 'multiple_choice') correctText = q.options ? q.options[q.correct] : '';
+                    else if (q.type === 'true_false') correctText = q.correct ? 'True' : 'False';
+                    else correctText = String(q.correct);
+                    return `
+                      <tr data-search="${q.text.toLowerCase()}" data-activity="${q.activityId}">
+                        <td style="font-weight:700;color:#999;">${idx + 1}</td>
+                        <td style="max-width:300px;">
+                          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${q.text}</div>
+                        </td>
+                        <td><span class="badge" style="background:#f0f0f0;color:#666;">${q.type.replace('_', ' ')}</span></td>
+                        <td>${q.activityIcon} ${q.activityTitle}</td>
+                        <td style="color:#4CAF50;font-weight:600;">${correctText}</td>
+                      </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            ${allQuestions.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">❓</div><div class="empty-state-text">No questions yet.</div></div>' : ''}
+          </div>`;
+      },
+
+      filterQuestions() {
+        const search = document.getElementById('question-search').value.toLowerCase();
+        const activity = document.getElementById('question-filter').value;
+        document.querySelectorAll('#questions-table tbody tr').forEach(row => {
+          const matchSearch = row.dataset.search.includes(search);
+          const matchActivity = !activity || row.dataset.activity === activity;
+          row.style.display = (matchSearch && matchActivity) ? '' : 'none';
+        });
+      },
+
+      /* ===== Categories ===== */
+      renderCategories(container) {
+        const activities = API._getActivities();
+        const catMap = {};
+        activities.forEach(a => {
+          if (!catMap[a.category]) catMap[a.category] = { count: 0, icon: a.icon, color: a.color };
+          catMap[a.category].count++;
+        });
+        const cats = Object.entries(catMap);
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>Categories (${cats.length})</h3>
+              <button class="btn btn-primary btn-sm" onclick="AdminApp.openCategoryEditor()">+ New Category</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:14px;">
+              ${cats.map(([name, data]) => `
+                <div style="background:#fff;border:2px solid #f0f0f0;border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;transition:border-color 0.2s;" onmouseenter="this.style.borderColor='${data.color}'" onmouseleave="this.style.borderColor='#f0f0f0'">
+                  <div style="width:48px;height:48px;border-radius:12px;background:${data.color}22;display:flex;align-items:center;justify-content:center;font-size:22px;">${data.icon}</div>
+                  <div style="flex:1;">
+                    <div style="font-weight:700;font-size:15px;">${name}</div>
+                    <div style="font-size:13px;color:#888;">${data.count} activities</div>
+                  </div>
+                  <button class="btn btn-ghost btn-sm" onclick="AdminApp.editCategory('${name}')">✏️</button>
+                </div>`).join('')}
+              ${cats.length === 0 ? '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-icon">📂</div><div class="empty-state-text">No categories yet.</div></div>' : ''}
+            </div>
+          </div>`;
+      },
+
+      openCategoryEditor(existingName) {
+        const activities = API._getActivities();
+        const existing = existingName ? activities.find(a => a.category === existingName) : null;
+        const bodyHtml = `
+          <form id="category-form">
+            <div class="form-group">
+              <label class="form-label">Category Name</label>
+              <input type="text" class="form-input" id="cat-name" value="${existingName || ''}" ${existingName ? 'readonly' : ''} required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Icon</label>
+                <input type="text" class="form-input" id="cat-icon" value="${existing ? existing.icon : '📂'}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Color</label>
+                <input type="color" class="form-input" id="cat-color" value="${existing ? existing.color : '#4CAF50'}" style="height:40px;padding:4px;">
+              </div>
+            </div>
+          </form>`;
+        const footerHtml = `
+          <button class="btn btn-ghost" onclick="AdminApp.closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminApp.saveCategory('${existingName || ''}')">💾 Save</button>`;
+        this.openModal(existingName ? 'Edit Category' : 'New Category', bodyHtml, footerHtml);
+      },
+
+      editCategory(name) { this.openCategoryEditor(name); },
+
+      saveCategory(existingName) {
+        const name = document.getElementById('cat-name').value.trim();
+        const icon = document.getElementById('cat-icon').value;
+        const color = document.getElementById('cat-color').value;
+        if (!name) { Toast.error('Category name is required!'); return; }
+        const activities = API._getActivities();
+        if (existingName && existingName !== name) {
+          activities.forEach(a => { if (a.category === existingName) a.category = name; });
+        }
+        if (activities.length > 0) {
+          const first = activities.find(a => a.category === name);
+          if (first) { first.icon = icon; first.color = color; }
+        }
+        API._setActivities(activities);
+        Toast.success('Category saved!');
+        this.closeModal();
+        this.renderCategories(document.getElementById('content-area'));
+      },
+
+      /* ===== Tags ===== */
+      renderTags(container) {
+        const tags = API._getTags();
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>Tags (${tags.length})</h3>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="form-input" id="new-tag-input" placeholder="New tag name..." style="max-width:200px;">
+                <button class="btn btn-primary btn-sm" onclick="AdminApp.addTag()">+ Add Tag</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              ${tags.map(tag => `
+                <div style="display:inline-flex;align-items:center;gap:6px;background:#f0f0ff;border:2px solid #e0e0ff;border-radius:20px;padding:6px 14px;font-size:14px;font-weight:600;color:#6C63FF;">
+                  🏷️ ${tag}
+                  <button onclick="AdminApp.removeTag('${tag}')" style="background:none;border:none;color:#f44336;font-size:16px;cursor:pointer;padding:0 2px;">&times;</button>
+                </div>`).join('')}
+              ${tags.length === 0 ? '<div style="padding:20px;color:#999;">No tags yet.</div>' : ''}
+            </div>
+          </div>`;
+      },
+
+      addTag() {
+        const input = document.getElementById('new-tag-input');
+        const tag = input.value.trim().toLowerCase();
+        if (!tag) return;
+        const tags = API._getTags();
+        if (tags.includes(tag)) { Toast.error('Tag already exists!'); return; }
+        tags.push(tag);
+        API._setTags(tags);
+        Toast.success('Tag added!');
+        this.renderTags(document.getElementById('content-area'));
+      },
+
+      removeTag(tag) {
+        const tags = API._getTags().filter(t => t !== tag);
+        API._setTags(tags);
+        Toast.success('Tag removed!');
+        this.renderTags(document.getElementById('content-area'));
+      },
+
+      /* ===== Media Library ===== */
+      renderMedia(container) {
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>Media Library</h3>
+              <button class="btn btn-primary btn-sm" onclick="Toast.info('Media upload requires a backend server.')">📤 Upload File</button>
+            </div>
+            <div class="empty-state">
+              <div class="empty-state-icon">🖼️</div>
+              <div class="empty-state-text">Media library is a placeholder.</div>
+              <p style="color:#999;margin-top:8px;font-size:14px;">Upload images, audio, and video for your questions. Requires backend storage.</p>
+            </div>
+          </div>`;
+      },
+
+      /* ===== Users ===== */
+      renderUsers(container) {
+        const users = API._getUsers();
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>All Users (${users.length})</h3>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="search-input" placeholder="Search users..." id="user-search" oninput="AdminApp.filterUsers()" style="max-width:250px;">
+                <select class="form-select" id="user-role-filter" onchange="AdminApp.filterUsers()" style="max-width:150px;">
+                  <option value="">All Roles</option>
+                  <option value="student">Students</option>
+                  <option value="teacher">Teachers</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="admin-table" id="users-table">
+                <thead>
+                  <tr><th>User</th><th>Role</th><th>Level</th><th>XP</th><th>Coins</th><th>Badges</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                  ${users.map(u => `
+                    <tr data-search="${(u.display_name || '').toLowerCase()} ${u.username.toLowerCase()}" data-role="${u.role}">
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#FF6B9D);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">${(u.display_name || u.username)[0].toUpperCase()}</div>
+                          <div>
+                            <div style="font-weight:600;font-size:14px;">${u.display_name || u.username}</div>
+                            <div style="font-size:12px;color:#999;">${u.email || ''}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+                      <td style="font-weight:700;">Lv. ${u.level || 1}</td>
+                      <td>${u.xp || 0}</td>
+                      <td>${u.coins || 0}</td>
+                      <td>${(u.badges || []).length}</td>
+                      <td>
+                        <div class="actions">
+                          <button class="btn btn-ghost btn-sm" onclick="AdminApp.editUser('${u.id}')">✏️ Edit</button>
+                          ${u.id !== API._getSession()?.id ? `<button class="btn btn-danger btn-sm" onclick="AdminApp.deleteUser('${u.id}')">🗑️</button>` : ''}
+                        </div>
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
+      },
+
+      filterUsers() {
+        const search = document.getElementById('user-search').value.toLowerCase();
+        const role = document.getElementById('user-role-filter').value;
+        document.querySelectorAll('#users-table tbody tr').forEach(row => {
+          const matchSearch = row.dataset.search.includes(search);
+          const matchRole = !role || row.dataset.role === role;
+          row.style.display = (matchSearch && matchRole) ? '' : 'none';
+        });
+      },
+
+      editUser(userId) {
+        const users = API._getUsers();
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+        const bodyHtml = `
+          <form id="user-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Display Name</label>
+                <input type="text" class="form-input" id="edit-display-name" value="${user.display_name || ''}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-input" id="edit-username" value="${user.username}" readonly>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="edit-email" value="${user.email || ''}">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Role</label>
+                <select class="form-select" id="edit-role">
+                  <option value="student" ${user.role === 'student' ? 'selected' : ''}>Student</option>
+                  <option value="teacher" ${user.role === 'teacher' ? 'selected' : ''}>Teacher</option>
+                  <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Password (leave blank to keep)</label>
+                <input type="password" class="form-input" id="edit-password" placeholder="••••••">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">XP</label>
+                <input type="number" class="form-input" id="edit-xp" value="${user.xp || 0}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Coins</label>
+                <input type="number" class="form-input" id="edit-coins" value="${user.coins || 0}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Level</label>
+                <input type="number" class="form-input" id="edit-level" value="${user.level || 1}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Streak (days)</label>
+                <input type="number" class="form-input" id="edit-streak" value="${user.streak || 0}">
+              </div>
+            </div>
+          </form>`;
+        const footerHtml = `
+          <button class="btn btn-ghost" onclick="AdminApp.closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminApp.saveUser('${userId}')">💾 Save Changes</button>`;
+        this.openModal('Edit User: ' + (user.display_name || user.username), bodyHtml, footerHtml);
+      },
+
+      saveUser(userId) {
+        const users = API._getUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx < 0) return;
+        users[idx].display_name = document.getElementById('edit-display-name').value.trim();
+        users[idx].email = document.getElementById('edit-email').value.trim();
+        users[idx].role = document.getElementById('edit-role').value;
+        users[idx].xp = parseInt(document.getElementById('edit-xp').value) || 0;
+        users[idx].coins = parseInt(document.getElementById('edit-coins').value) || 0;
+        users[idx].level = parseInt(document.getElementById('edit-level').value) || 1;
+        users[idx].streak = parseInt(document.getElementById('edit-streak').value) || 0;
+        const newPass = document.getElementById('edit-password').value;
+        if (newPass) users[idx].password = newPass;
+        API._setUsers(users);
+        const session = API._getSession();
+        if (session && session.id === userId) API._setSession(users[idx]);
+        Toast.success('User updated!');
+        this.closeModal();
+        this.renderUsers(document.getElementById('content-area'));
+      },
+
+      deleteUser(userId) {
+        if (!confirm('Delete this user? This cannot be undone.')) return;
+        const users = API._getUsers().filter(u => u.id !== userId);
+        API._setUsers(users);
+        Toast.success('User deleted!');
+        this.renderUsers(document.getElementById('content-area'));
+      },
+
+      /* ===== Assignments ===== */
+      renderAssignments(container) {
+        const assignments = API._getAssignments();
+        const activities = API._getActivities();
+        const users = API._getUsers().filter(u => u.role === 'student');
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3>Assignments (${assignments.length})</h3>
+              <button class="btn btn-primary btn-sm" onclick="AdminApp.openAssignmentEditor()">+ New Assignment</button>
+            </div>
+            ${assignments.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No assignments yet. Assign activities to students!</div></div>' :
+            `<div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead><tr><th>Student</th><th>Activity</th><th>Due Date</th><th>Status</th></tr></thead>
+                <tbody>
+                  ${assignments.map(a => {
+                    const user = users.find(u => u.id === a.studentId);
+                    const act = activities.find(ac => ac.id === a.activityId);
+                    const completed = user && user.scores && user.scores[a.activityId];
+                    return `
+                      <tr>
+                        <td style="font-weight:600;">${user ? (user.display_name || user.username) : 'Unknown'}</td>
+                        <td>${act ? act.icon + ' ' + act.title : 'Unknown'}</td>
+                        <td>${a.dueDate || 'No due date'}</td>
+                        <td><span class="badge" style="background:${completed ? '#E8F5E9' : '#FFF3E0'};color:${completed ? '#2E7D32' : '#E65100'};">${completed ? 'Completed' : 'Pending'}</span></td>
+                      </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>`}
+          </div>`;
+      },
+
+      openAssignmentEditor() {
+        const activities = API._getActivities();
+        const students = API._getUsers().filter(u => u.role === 'student');
+        const bodyHtml = `
+          <form id="assignment-form">
+            <div class="form-group">
+              <label class="form-label">Student</label>
+              <select class="form-select" id="assign-student" required>
+                <option value="">Select a student...</option>
+                ${students.map(s => `<option value="${s.id}">${s.display_name || s.username}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Activity</label>
+              <select class="form-select" id="assign-activity" required>
+                <option value="">Select an activity...</option>
+                ${activities.map(a => `<option value="${a.id}">${a.icon} ${a.title}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date (optional)</label>
+              <input type="date" class="form-input" id="assign-due-date">
+            </div>
+          </form>`;
+        const footerHtml = `
+          <button class="btn btn-ghost" onclick="AdminApp.closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminApp.saveAssignment()">📋 Create Assignment</button>`;
+        this.openModal('New Assignment', bodyHtml, footerHtml);
+      },
+
+      saveAssignment() {
+        const studentId = document.getElementById('assign-student').value;
+        const activityId = document.getElementById('assign-activity').value;
+        const dueDate = document.getElementById('assign-due-date').value;
+        if (!studentId || !activityId) { Toast.error('Select a student and activity!'); return; }
+        const assignments = API._getAssignments();
+        assignments.push({ id: 'asgn_' + Date.now(), studentId, activityId, dueDate, created_at: new Date().toISOString() });
+        localStorage.setItem('eduquiz_assignments', JSON.stringify(assignments));
+        Toast.success('Assignment created!');
+        this.closeModal();
+        this.renderAssignments(document.getElementById('content-area'));
+      },
+
+      /* ===== Badges ===== */
+      renderBadges(container) {
+        const badgeDefs = [
+          { id: 'first_quiz', name: 'First Quiz', icon: '🎯', description: 'Complete your first quiz', bg: '#E3F2FD' },
+          { id: 'streak_5', name: '5 Day Streak', icon: '🔥', description: 'Play quizzes for 5 days in a row', bg: '#FFF3E0' },
+          { id: 'perfect_score', name: 'Perfect Score', icon: '💯', description: 'Get 100% on any quiz', bg: '#E8F5E9' },
+          { id: 'level_5', name: 'Level 5', icon: '⭐', description: 'Reach level 5', bg: '#F3E5F5' },
+          { id: 'xp_1000', name: 'XP Master', icon: '🧠', description: 'Earn 1000 total XP', bg: '#FCE4EC' },
+          { id: 'quiz_10', name: 'Quiz Veteran', icon: '🏅', description: 'Complete 10 quizzes', bg: '#E0F7FA' }
+        ];
+        const users = API._getUsers().filter(u => u.role === 'student');
+        container.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-header"><h3>Badge Definitions</h3></div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px;">
+              ${badgeDefs.map(b => {
+                const earnedCount = users.filter(u => (u.badges || []).includes(b.id)).length;
+                return `
+                  <div style="background:#fff;border:2px solid #f0f0f0;border-radius:14px;padding:18px;display:flex;gap:14px;align-items:flex-start;">
+                    <div style="width:56px;height:56px;border-radius:50%;background:${b.bg};display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">${b.icon}</div>
+                    <div style="flex:1;">
+                      <div style="font-weight:700;font-size:15px;margin-bottom:2px;">${b.name}</div>
+                      <div style="font-size:13px;color:#888;margin-bottom:6px;">${b.description}</div>
+                      <div style="font-size:12px;color:#6C63FF;font-weight:600;">Earned by ${earnedCount} student${earnedCount !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+      },
+
+      /* ===== Analytics ===== */
+      renderAnalytics(container) {
+        const users = API._getUsers().filter(u => u.role === 'student');
+        const activities = API._getActivities();
+        const totalXp = users.reduce((s, u) => s + (u.xp || 0), 0);
+        const avgXp = users.length > 0 ? Math.round(totalXp / users.length) : 0;
+        const maxLevel = users.reduce((m, u) => Math.max(m, u.level || 1), 0);
+        const topUsers = [...users].sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 5);
+
+        // Activity popularity
+        const actPopularity = {};
+        users.forEach(u => {
+          Object.keys(u.scores || {}).forEach(actId => {
+            actPopularity[actId] = (actPopularity[actId] || 0) + 1;
+          });
+        });
+        const popularActivities = Object.entries(actPopularity)
+          .map(([id, count]) => ({ activity: activities.find(a => a.id === id), count }))
+          .filter(a => a.activity)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        container.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#E8F5E9;color:#388E3C;">👥</div>
+              <div class="stat-card-value">${users.length}</div>
+              <div class="stat-card-label">Active Students</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#FFF3E0;color:#F57C00;">⭐</div>
+              <div class="stat-card-value">${totalXp.toLocaleString()}</div>
+              <div class="stat-card-label">Total XP Earned</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#E3F2FD;color:#1976D2;">📊</div>
+              <div class="stat-card-value">${avgXp}</div>
+              <div class="stat-card-label">Avg XP per Student</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon" style="background:#F3E5F5;color:#7B1FA2;">🏆</div>
+              <div class="stat-card-value">${maxLevel}</div>
+              <div class="stat-card-label">Highest Level</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="admin-card">
+              <div class="admin-card-header"><h3>🏆 Top Students</h3></div>
+              <div>
+                ${topUsers.map((u, idx) => `
+                  <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:${idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : '#f0f0f0'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:${idx < 3 ? '#fff' : '#888'};">${idx + 1}</div>
+                    <div style="flex:1;">
+                      <div style="font-weight:600;font-size:14px;">${u.display_name || u.username}</div>
+                      <div style="font-size:12px;color:#999;">Level ${u.level || 1}</div>
+                    </div>
+                    <div style="font-weight:800;color:#6C63FF;">${u.xp || 0} XP</div>
+                  </div>`).join('') || '<div style="padding:20px;text-align:center;color:#999;">No student data yet</div>'}
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header"><h3>📈 Popular Activities</h3></div>
+              <div>
+                ${popularActivities.map((a, idx) => `
+                  <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                    <div style="font-size:18px;">${a.activity.icon}</div>
+                    <div style="flex:1;">
+                      <div style="font-weight:600;font-size:14px;">${a.activity.title}</div>
+                      <div style="font-size:12px;color:#999;">${a.activity.category} · ${a.activity.difficulty}</div>
+                    </div>
+                    <div style="font-weight:700;color:#FF9800;">${a.count} plays</div>
+                  </div>`).join('') || '<div style="padding:20px;text-align:center;color:#999;">No activity data yet</div>'}
+              </div>
+            </div>
+          </div>`;
+      },
+
+      /* ===== Export Data ===== */
+      exportData() {
+        const data = {
+          users: API._getUsers(),
+          activities: API._getActivities(),
+          tags: API._getTags(),
+          assignments: API._getAssignments(),
+          exported_at: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eduquiz_export_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Toast.success('Data exported!');
+      }
+    };
+
+    /* ========== Close modal on overlay click ========== */
+    document.getElementById('admin-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'admin-modal') AdminApp.closeModal();
+    });
+
+    /* ========== Init ========== */
+    document.addEventListener('DOMContentLoaded', () => AdminApp.init());
+  </script>
+</body>
+</html>

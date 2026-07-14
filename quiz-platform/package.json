@@ -1,0 +1,18 @@
+{
+  "name": "quiz-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-ready educational quiz platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && node server.js",
+    "dev:frontend": "cd frontend && npx vite --port 5173",
+    "build": "cd frontend && npx vite build",
+    "start": "cd backend && node server.js",
+    "setup": "cd backend && node setup.js",
+    "seed": "cd backend && node seed.js"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

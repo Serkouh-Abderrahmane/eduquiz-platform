@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>EduQuiz - Playing</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/game.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f0f23; color: #fff; min-height: 100vh; overflow: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Game Container */
+    .game-container { display: flex; flex-direction: column; height: 100vh; }
+
+    /* Game Header */
+    .game-header { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+    .game-header-inner { display: flex; align-items: center; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .game-header-left { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .game-back-btn { font-size: 14px; color: rgba(255,255,255,0.7); transition: color 0.2s; font-weight: 600; }
+    .game-back-btn:hover { color: #fff; }
+    .question-counter { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 8px; }
+    .game-header-center { flex: 1; }
+    .progress-bar-container { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #6C63FF, #FF6B9D); border-radius: 4px; transition: width 0.5s ease; }
+    .game-header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .lives-display { display: flex; gap: 4px; font-size: 18px; }
+    .timer-display { background: rgba(255,152,0,0.2); color: #FF9800; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+    .timer-display.warning { background: rgba(244,67,54,0.2); color: #f44336; animation: timerPulse 1s infinite; }
+    .score-display { background: rgba(108,99,255,0.2); color: #6C63FF; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+    @keyframes timerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    /* Game Body */
+    .game-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; overflow-y: auto; position: relative; }
+
+    /* Loading */
+    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+    .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #6C63FF; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state p { color: rgba(255,255,255,0.6); font-size: 16px; }
+
+    /* Question Card */
+    .question-card { max-width: 700px; width: 100%; margin: 0 auto; animation: slideUp 0.4s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    .question-type-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; background: rgba(108,99,255,0.2); color: #6C63FF; }
+
+    .reading-passage { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 24px; font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.85); max-height: 200px; overflow-y: auto; }
+    .reading-passage h4 { margin-bottom: 10px; color: #6C63FF; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .question-image-container { margin-bottom: 20px; text-align: center; }
+    .question-image { max-width: 100%; max-height: 250px; border-radius: 16px; object-fit: contain; border: 2px solid rgba(255,255,255,0.1); }
+
+    .question-audio-container { margin-bottom: 20px; text-align: center; }
+    .question-audio-btn { background: linear-gradient(135deg, #6C63FF, #5A52E0); color: #fff; border: none; padding: 12px 28px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .question-audio-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+    .question-audio-btn.playing { background: linear-gradient(135deg, #FF6B9D, #FF4081); }
+
+    .question-text { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 28px; line-height: 1.4; text-align: center; }
+
+    /* Fill in blank */
+    .fill-blank-container { margin-bottom: 28px; text-align: center; }
+    .fill-blank-input { background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 14px 20px; font-size: 18px; color: #fff; text-align: center; width: 100%; max-width: 400px; outline: none; transition: border-color 0.2s; }
+    .fill-blank-input:focus { border-color: #6C63FF; }
+    .fill-blank-input::placeholder { color: rgba(255,255,255,0.3); }
+    .fill-blank-submit { margin-top: 16px; background: linear-gradient(135deg, #6C63FF, #5A52E0); color: #fff; border: none; padding: 12px 32px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .fill-blank-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+
+    /* Answer Choices */
+    .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .choice-btn { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 18px 20px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; }
+    .choice-btn:hover { border-color: #6C63FF; background: rgba(108,99,255,0.1); transform: translateY(-2px); }
+    .choice-btn:active { transform: scale(0.98); }
+    .choice-btn.selected { border-color: #6C63FF; background: rgba(108,99,255,0.2); }
+    .choice-btn.correct { border-color: #4CAF50; background: rgba(76,175,80,0.2); animation: correctPulse 0.5s ease-out; }
+    .choice-btn.incorrect { border-color: #f44336; background: rgba(244,67,54,0.2); animation: shake 0.4s ease-out; }
+    .choice-btn.disabled { pointer-events: none; opacity: 0.5; }
+    .choice-label { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .choice-btn.correct .choice-label { background: #4CAF50; }
+    .choice-btn.incorrect .choice-label { background: #f44336; }
+    @keyframes correctPulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+    /* True/False choices */
+    .tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 400px; margin: 0 auto; }
+    .tf-btn { padding: 24px; font-size: 20px; }
+    .tf-btn.true-btn { background: rgba(76,175,80,0.1); border-color: rgba(76,175,80,0.3); }
+    .tf-btn.true-btn:hover { border-color: #4CAF50; background: rgba(76,175,80,0.2); }
+    .tf-btn.false-btn { background: rgba(244,67,54,0.1); border-color: rgba(244,67,54,0.3); }
+    .tf-btn.false-btn:hover { border-color: #f44336; background: rgba(244,67,54,0.2); }
+
+    /* Feedback Overlay */
+    .feedback-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 20px; animation: slideUpFeedback 0.3s ease-out; }
+    @keyframes slideUpFeedback { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .feedback-content { max-width: 700px; margin: 0 auto; display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-radius: 16px; backdrop-filter: blur(20px); }
+    .feedback-content.correct-feedback { background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3); }
+    .feedback-content.incorrect-feedback { background: rgba(244,67,54,0.15); border: 1px solid rgba(244,67,54,0.3); }
+    .feedback-icon { font-size: 36px; flex-shrink: 0; }
+    .feedback-text { flex: 1; }
+    .feedback-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .feedback-title.correct-title { color: #4CAF50; }
+    .feedback-title.incorrect-title { color: #f44336; }
+    .feedback-explanation { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+    .feedback-next-btn { background: linear-gradient(135deg, #6C63FF, #5A52E0); color: #fff; border: none; padding: 10px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+    .feedback-next-btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(108,99,255,0.3); }
+
+    /* Celebration Overlay */
+    .celebration-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 999; pointer-events: none; }
+
+    /* Confetti */
+    .confetti-piece { position: fixed; width: 10px; height: 10px; border-radius: 2px; animation: confettiFall linear forwards; z-index: 1000; pointer-events: none; }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .choices-grid { grid-template-columns: 1fr; }
+      .question-text { font-size: 1.2rem; }
+      .game-header-inner { gap: 8px; }
+      .game-header-right { gap: 8px; }
+      .score-display, .timer-display, .question-counter { font-size: 12px; padding: 3px 8px; }
+      .feedback-content { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <!-- Game Header -->
+    <header class="game-header" id="game-header">
+      <div class="game-header-inner">
+        <div class="game-header-left">
+          <a href="/" class="game-back-btn" id="game-back-btn">← Back</a>
+          <div class="question-counter">
+            Question <span id="current-num">1</span> / <span id="total-num">0</span>
+          </div>
+        </div>
+        <div class="game-header-center">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="game-header-right">
+          <div class="lives-display" id="lives-display"></div>
+          <div class="timer-display" id="timer-display" style="display:none">
+            <span id="timer-value">30</span>s
+          </div>
+          <div class="score-display">
+            <span id="score-value">0</span> pts
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Game Body -->
+    <main class="game-body" id="game-body">
+      <!-- Loading state -->
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p>Loading question...</p>
+      </div>
+
+      <!-- Question Card -->
+      <div class="question-card" id="question-card" style="display:none">
+        <div class="question-type-badge" id="question-type-badge"></div>
+        <div class="reading-passage" id="reading-passage" style="display:none">
+          <h4>📖 Reading Passage</h4>
+          <div id="reading-passage-text"></div>
+        </div>
+        <div class="question-image-container" id="question-image-container" style="display:none">
+          <img class="question-image" id="question-image" alt="Question image">
+        </div>
+        <div class="question-audio-container" id="question-audio-container" style="display:none">
+          <button class="question-audio-btn" id="audio-play-btn" onclick="playQuestionAudio()">
+            🔊 Play Audio
+          </button>
+        </div>
+        <h2 class="question-text" id="question-text"></h2>
+        <div class="choices-grid" id="choices-grid"></div>
+      </div>
+
+      <!-- Feedback overlay -->
+      <div class="feedback-overlay" id="feedback-overlay" style="display:none">
+        <div class="feedback-content" id="feedback-content"></div>
+      </div>
+    </main>
+
+    <!-- Celebration overlay -->
+    <div class="celebration-overlay" id="celebration-overlay"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/utils.js"></script>
+  <script src="/js/toast.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/confetti.js"></script>
+  <script src="/js/game-engine.js"></script>
+  <script src="/js/game.js"></script>
+  <script>
+    /* ========== Toast System ========== */
+    const Toast = {
+      container: null,
+      init() {
+        this.container = document.getElementById('toast-container');
+        if (!this.container) {
+          this.container = document.createElement('div');
+          this.container.id = 'toast-container';
+          this.container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+          document.body.appendChild(this.container);
+        }
+      },
+      show(message, type = 'info', duration = 3000) {
+        if (!this.container) this.init();
+        const toast = document.createElement('div');
+        toast.style.cssText = `padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.15);min-width:250px;animation:toastIn 0.3s ease-out;`;
+        const colors = { success: 'linear-gradient(135deg,#4CAF50,#388E3C)', error: 'linear-gradient(135deg,#f44336,#d32f2f)', info: 'linear-gradient(135deg,#2196F3,#1976D2)' };
+        toast.style.background = colors[type] || colors.info;
+        toast.textContent = message;
+        this.container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100px)'; toast.style.transition = 'all 0.3s'; setTimeout(() => toast.remove(), 300); }, duration);
+      },
+      success(msg) { this.show(msg, 'success'); },
+      error(msg) { this.show(msg, 'error'); },
+      info(msg) { this.show(msg, 'info'); }
+    };
+
+    /* ========== API Stub (with localStorage) ========== */
+    const API = {
+      _getUsers() { return JSON.parse(localStorage.getItem('eduquiz_users') || '[]'); },
+      _setUsers(users) { localStorage.setItem('eduquiz_users', JSON.stringify(users)); },
+      _getSession() { return JSON.parse(localStorage.getItem('eduquiz_session') || 'null'); },
+      _setSession(s) { localStorage.setItem('eduquiz_session', JSON.stringify(s)); },
+      _seedDemoAccounts() {
+        const users = this._getUsers();
+        const demos = [
+          { id: '1', username: 'student', password: 'student123', display_name: 'Alex Student', email: 'student@demo.com', role: 'student', xp: 1250, coins: 85, level: 5, streak: 7, badges: ['first_quiz', 'streak_5', 'perfect_score'], scores: {} },
+          { id: '2', username: 'teacher', password: 'teacher123', display_name: 'Ms. Teacher', email: 'teacher@demo.com', role: 'teacher', xp: 0, coins: 0, level: 1, streak: 0, badges: [], scores: {} },
+          { id: '3', username: 'admin', password: 'admin123', display_name: 'Super Admin', email: 'admin@demo.com', role: 'admin', xp: 0, coins: 0, level: 1, streak: 0, badges: [], scores: {} }
+        ];
+        demos.forEach(d => { if (!users.find(u => u.username === d.username)) users.push(d); });
+        this._setUsers(users);
+      },
+      _getActivities() {
+        return JSON.parse(localStorage.getItem('eduquiz_activities') || 'null') || this._seedActivities();
+      },
+      _setActivities(a) { localStorage.setItem('eduquiz_activities', JSON.stringify(a)); },
+      _seedActivities() {
+        const activities = [
+          { id: 'act1', title: 'Animal Vocabulary', description: 'Learn names of animals', category: 'Vocabulary', icon: '🐾', color: '#4CAF50', difficulty: 'easy', question_count: 10, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Which animal says "Moo"?', options: ['Dog', 'Cat', 'Cow', 'Bird'], correct: 2, explanation: 'Cows say "Moo"!' },
+            { id: 'q2', type: 'multiple_choice', text: 'Which animal can fly?', options: ['Fish', 'Dog', 'Eagle', 'Snake'], correct: 2, explanation: 'Eagles are birds and can fly!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What do you call a baby dog?', options: ['Kitten', 'Puppy', 'Calf', 'Foal'], correct: 1, explanation: 'A baby dog is called a puppy!' },
+            { id: 'q4', type: 'true_false', text: 'A cat has nine lives.', correct: true, explanation: 'This is a common saying about cats!' },
+            { id: 'q5', type: 'multiple_choice', text: 'Which animal lives in water?', options: ['Lion', 'Eagle', 'Dolphin', 'Bear'], correct: 2, explanation: 'Dolphins live in the ocean!' },
+            { id: 'q6', type: 'multiple_choice', text: 'Which is the tallest animal?', options: ['Elephant', 'Giraffe', 'Horse', 'Monkey'], correct: 1, explanation: 'Giraffes are the tallest animals!' },
+            { id: 'q7', type: 'true_false', text: 'Penguins can fly.', correct: false, explanation: 'Penguins cannot fly but are excellent swimmers!' },
+            { id: 'q8', type: 'multiple_choice', text: 'What sound does a cat make?', options: ['Woof', 'Meow', 'Moo', 'Quack'], correct: 1, explanation: 'Cats say "Meow"!' },
+            { id: 'q9', type: 'multiple_choice', text: 'Which is man\'s best friend?', options: ['Cat', 'Horse', 'Dog', 'Fish'], correct: 2, explanation: 'Dogs are known as man\'s best friend!' },
+            { id: 'q10', type: 'multiple_choice', text: 'How many legs does a spider have?', options: ['6', '8', '10', '4'], correct: 1, explanation: 'Spiders have 8 legs!' }
+          ]},
+          { id: 'act2', title: 'Color Shapes', description: 'Colors and shapes', category: 'Colors & Shapes', icon: '🎨', color: '#FF6B9D', difficulty: 'easy', question_count: 8, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'What color is the sky?', options: ['Green', 'Blue', 'Red', 'Yellow'], correct: 1, explanation: 'The sky appears blue!' },
+            { id: 'q2', type: 'multiple_choice', text: 'How many sides does a triangle have?', options: ['2', '3', '4', '5'], correct: 1, explanation: 'A triangle has 3 sides!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What color are most bananas?', options: ['Red', 'Green', 'Yellow', 'Blue'], correct: 2, explanation: 'Most bananas are yellow!' },
+            { id: 'q4', type: 'multiple_choice', text: 'How many sides does a square have?', options: ['3', '4', '5', '6'], correct: 1, explanation: 'A square has 4 sides!' },
+            { id: 'q5', type: 'true_false', text: 'A circle has corners.', correct: false, explanation: 'A circle has no corners!' },
+            { id: 'q6', type: 'multiple_choice', text: 'Red + White = ?', options: ['Purple', 'Orange', 'Pink', 'Brown'], correct: 2, explanation: 'Red and white makes pink!' },
+            { id: 'q7', type: 'multiple_choice', text: 'What shape is a stop sign?', options: ['Circle', 'Square', 'Octagon', 'Triangle'], correct: 2, explanation: 'A stop sign is an octagon!' },
+            { id: 'q8', type: 'true_false', text: 'The sun is yellow.', correct: true, explanation: 'The sun appears yellow!' }
+          ]},
+          { id: 'act3', title: 'Numbers 1-20', description: 'Count and recognize', category: 'Math', icon: '🔢', color: '#2196F3', difficulty: 'easy', question_count: 10, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'What comes after 5?', options: ['4', '6', '7', '3'], correct: 1, explanation: '6 comes after 5!' },
+            { id: 'q2', type: 'multiple_choice', text: 'How many fingers on one hand?', options: ['4', '5', '6', '3'], correct: 1, explanation: 'You have 5 fingers!' },
+            { id: 'q3', type: 'multiple_choice', text: 'What is 3 + 4?', options: ['5', '6', '7', '8'], correct: 2, explanation: '3 + 4 = 7!' },
+            { id: 'q4', type: 'multiple_choice', text: 'Which is even: 3, 5, or 8?', options: ['3', '5', '8', 'None'], correct: 2, explanation: '8 is even!' },
+            { id: 'q5', type: 'true_false', text: '10 is greater than 12.', correct: false, explanation: '10 is less than 12!' },
+            { id: 'q6', type: 'multiple_choice', text: 'What is 10 - 3?', options: ['6', '7', '8', '5'], correct: 1, explanation: '10 - 3 = 7!' },
+            { id: 'q7', type: 'multiple_choice', text: 'How many sides does a rectangle have?', options: ['2', '3', '4', '5'], correct: 2, explanation: 'A rectangle has 4 sides!' },
+            { id: 'q8', type: 'multiple_choice', text: 'What comes before 1?', options: ['2', '0', '3', '10'], correct: 1, explanation: '0 comes before 1!' },
+            { id: 'q9', type: 'multiple_choice', text: 'What is 2 x 3?', options: ['4', '5', '6', '8'], correct: 2, explanation: '2 x 3 = 6!' },
+            { id: 'q10', type: 'true_false', text: '7 is an odd number.', correct: true, explanation: '7 is odd!' }
+          ]},
+          { id: 'act4', title: 'Grammar Basics', description: 'Practice grammar rules', category: 'Grammar', icon: '📝', color: '#FF9800', difficulty: 'medium', question_count: 8, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Which is a noun?', options: ['Run', 'Beautiful', 'Apple', 'Quickly'], correct: 2, explanation: 'Apple is a noun!' },
+            { id: 'q2', type: 'multiple_choice', text: '"She ___ going to school."', options: ['is', 'are', 'am', 'be'], correct: 0, explanation: '"She is going" is correct!' },
+            { id: 'q3', type: 'multiple_choice', text: 'Which is correct?', options: ['He don\'t like it.', 'He doesn\'t like it.', 'He not like it.', 'He no like it.'], correct: 1, explanation: '"He doesn\'t like it" is correct!' },
+            { id: 'q4', type: 'true_false', text: '"Their" and "there" mean the same.', correct: false, explanation: 'They mean different things!' },
+            { id: 'q5', type: 'multiple_choice', text: 'Which is a verb?', options: ['Happy', 'Table', 'Jump', 'Blue'], correct: 2, explanation: 'Jump is a verb!' },
+            { id: 'q6', type: 'multiple_choice', text: 'Plural of "child"?', options: ['Childs', 'Childes', 'Children', 'Childies'], correct: 2, explanation: 'Children is correct!' },
+            { id: 'q7', type: 'multiple_choice', text: '"The cat sat ___ the mat."', options: ['in', 'on', 'at', 'by'], correct: 1, explanation: '"On" is correct for surfaces!' },
+            { id: 'q8', type: 'true_false', text: 'An adjective describes a noun.', correct: true, explanation: 'Adjectives describe nouns!' }
+          ]},
+          { id: 'act5', title: 'Weather Words', description: 'Weather vocabulary', category: 'Vocabulary', icon: '🌤️', color: '#00BCD4', difficulty: 'medium', question_count: 8, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Water from clouds is called:', options: ['Wind', 'Rain', 'Snow', 'Sun'], correct: 1, explanation: 'It\'s called rain!' },
+            { id: 'q2', type: 'multiple_choice', text: 'Which season is coldest?', options: ['Summer', 'Spring', 'Winter', 'Fall'], correct: 2, explanation: 'Winter is coldest!' },
+            { id: 'q3', type: 'multiple_choice', text: 'Rainbows appear after:', options: ['Snow', 'Wind', 'Rain', 'Earthquake'], correct: 2, explanation: 'After rain with sunlight!' },
+            { id: 'q4', type: 'true_false', text: 'Thunder comes before lightning.', correct: false, explanation: 'Lightning comes first!' },
+            { id: 'q5', type: 'multiple_choice', text: 'Opposite of "hot"?', options: ['Warm', 'Cool', 'Cold', 'Mild'], correct: 2, explanation: 'Cold is the opposite!' },
+            { id: 'q6', type: 'multiple_choice', text: 'Cloud that brings rain:', options: ['Cirrus', 'Cumulus', 'Nimbus', 'Stratus'], correct: 2, explanation: 'Nimbus clouds bring rain!' },
+            { id: 'q7', type: 'multiple_choice', text: 'Frozen rain is called:', options: ['Dew', 'Fog', 'Hail', 'Cloud'], correct: 2, explanation: 'It\'s called hail!' },
+            { id: 'q8', type: 'true_false', text: 'A tornado is spinning air.', correct: true, explanation: 'Yes, spinning column of air!' }
+          ]},
+          { id: 'act6', title: 'Solar System', description: 'Planets and space', category: 'Science', icon: '🪐', color: '#7C4DFF', difficulty: 'hard', question_count: 8, questions: [
+            { id: 'q1', type: 'multiple_choice', text: 'Closest planet to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], correct: 1, explanation: 'Mercury is closest!' },
+            { id: 'q2', type: 'multiple_choice', text: 'How many planets?', options: ['7', '8', '9', '10'], correct: 1, explanation: 'There are 8 planets!' },
+            { id: 'q3', type: 'multiple_choice', text: 'Red Planet?', options: ['Jupiter', 'Venus', 'Mars', 'Saturn'], correct: 2, explanation: 'Mars is the Red Planet!' },
+            { id: 'q4', type: 'multiple_choice', text: 'Largest planet?', options: ['Earth', 'Saturn', 'Jupiter', 'Neptune'], correct: 2, explanation: 'Jupiter is largest!' },
+            { id: 'q5', type: 'true_false', text: 'The Sun is a star.', correct: true, explanation: 'The Sun is a star!' },
+            { id: 'q6', type: 'multiple_choice', text: 'Planet with most rings?', options: ['Jupiter', 'Neptune', 'Saturn', 'Uranus'], correct: 2, explanation: 'Saturn has the most rings!' },
+            { id: 'q7', type: 'multiple_choice', text: 'Moon\'s light source?', options: ['Its own', 'The Sun', 'Stars', 'Earth'], correct: 1, explanation: 'Moon reflects sunlight!' },
+            { id: 'q8', type: 'true_false', text: 'There is gravity on the Moon.', correct: true, explanation: 'The Moon has gravity!' }
+          ]}
+        ];
+        this._setActivities(activities);
+        return activities;
+      },
+      isLoggedIn() { return !!this._getSession(); },
+      getCurrentUser() { return this._getSession(); },
+      async getActivities() { return this._getActivities(); },
+      async submitScore(activityId, score, totalQuestions, timeTaken) {
+        const session = this._getSession();
+        if (!session) return null;
+        const users = this._getUsers();
+        const user = users.find(u => u.id === session.id);
+        if (!user) return null;
+        if (!user.scores) user.scores = {};
+        const prevBest = user.scores[activityId] || 0;
+        if (score > prevBest) user.scores[activityId] = score;
+        const xpEarned = score * 10;
+        const coinsEarned = score;
+        user.xp = (user.xp || 0) + xpEarned;
+        user.coins = (user.coins || 0) + coinsEarned;
+        user.level = Math.floor(user.xp / 500) + 1;
+        this._setUsers(users);
+        this._setSession(user);
+        return { xp_earned: xpEarned, coins_earned: coinsEarned, total_xp: user.xp, total_coins: user.coins, level: user.level };
+      }
+    };
+
+    /* ========== Confetti System ========== */
+    const Confetti = {
+      colors: ['#6C63FF', '#FF6B9D', '#4CAF50', '#FF9800', '#2196F3', '#FFD700', '#E91E63', '#00BCD4'],
+      launch(count = 50) {
+        const overlay = document.getElementById('celebration-overlay');
+        overlay.style.display = 'block';
+        overlay.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const piece = document.createElement('div');
+          piece.className = 'confetti-piece';
+          piece.style.left = Math.random() * 100 + 'vw';
+          piece.style.top = '-10px';
+          piece.style.backgroundColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+          piece.style.width = (Math.random() * 8 + 5) + 'px';
+          piece.style.height = (Math.random() * 8 + 5) + 'px';
+          piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          piece.style.animationDelay = (Math.random() * 1) + 's';
+          overlay.appendChild(piece);
+        }
+        setTimeout(() => { overlay.style.display = 'none'; overlay.innerHTML = ''; }, 5000);
+      },
+      stop() {
+        const overlay = document.getElementById('celebration-overlay');
+        overlay.style.display = 'none';
+        overlay.innerHTML = '';
+      }
+    };
+
+    /* ========== Game Engine ========== */
+    const GameEngine = {
+      activity: null,
+      questions: [],
+      currentIndex: 0,
+      score: 0,
+      lives: 3,
+      answers: [],
+      startTime: null,
+      timerInterval: null,
+      timeLimit: 30,
+      timeRemaining: 30,
+      isAnswering: false,
+
+      init(activityId) {
+        this.activity = null;
+        this.questions = [];
+        this.currentIndex = 0;
+        this.score = 0;
+        this.lives = 3;
+        this.answers = [];
+        this.startTime = Date.now();
+        this.isAnswering = false;
+        this.loadActivity(activityId);
+      },
+
+      async loadActivity(activityId) {
+        const activities = await API.getActivities();
+        this.activity = activities.find(a => a.id === activityId);
+        if (!this.activity || !this.activity.questions || this.activity.questions.length === 0) {
+          Toast.error('Activity not found!');
+          setTimeout(() => window.location.href = '/', 1500);
+          return;
+        }
+        this.questions = this.shuffleArray([...this.activity.questions]);
+        document.getElementById('total-num').textContent = this.questions.length;
+        this.renderLives();
+        this.showQuestion();
+      },
+
+      shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      },
+
+      renderLives() {
+        const container = document.getElementById('lives-display');
+        let html = '';
+        for (let i = 0; i < 3; i++) {
+          html += i < this.lives ? '❤️' : '🖤';
+        }
+        container.innerHTML = html;
+      },
+
+      updateProgress() {
+        const percent = ((this.currentIndex) / this.questions.length) * 100;
+        document.getElementById('progress-bar').style.width = percent + '%';
+        document.getElementById('current-num').textContent = this.currentIndex + 1;
+      },
+
+      updateScore() {
+        document.getElementById('score-value').textContent = this.score;
+      },
+
+      startTimer() {
+        this.timeRemaining = this.timeLimit;
+        const timerEl = document.getElementById('timer-display');
+        const timerVal = document.getElementById('timer-value');
+        timerEl.style.display = 'block';
+        timerEl.classList.remove('warning');
+        timerVal.textContent = this.timeRemaining;
+        this.timerInterval = setInterval(() => {
+          this.timeRemaining--;
+          timerVal.textContent = this.timeRemaining;
+          if (this.timeRemaining <= 10) {
+            timerEl.classList.add('warning');
+          }
+          if (this.timeRemaining <= 0) {
+            this.timerStop();
+            this.timeUp();
+          }
+        }, 1000);
+      },
+
+      timerStop() {
+        if (this.timerInterval) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
+      },
+
+      timeUp() {
+        if (this.isAnswering) return;
+        this.isAnswering = true;
+        const question = this.questions[this.currentIndex];
+        this.answers.push({ question: question, userAnswer: null, correct: false });
+        this.lives--;
+        this.renderLives();
+        this.showFeedback(false, "Time's up! ⏰", question.explanation || '');
+        if (this.lives <= 0) {
+          setTimeout(() => this.endGame(), 2000);
+        }
+      },
+
+      showQuestion() {
+        if (this.currentIndex >= this.questions.length || this.lives <= 0) {
+          this.endGame();
+          return;
+        }
+        this.isAnswering = false;
+        const question = this.questions[this.currentIndex];
+        this.updateProgress();
+
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('question-card').style.display = 'block';
+        document.getElementById('feedback-overlay').style.display = 'none';
+
+        // Type badge
+        const typeBadge = document.getElementById('question-type-badge');
+        const typeLabels = { multiple_choice: '📝 Multiple Choice', true_false: '✅ True / False', fill_blank: '✏️ Fill in the Blank' };
+        typeBadge.textContent = typeLabels[question.type] || '📝 Question';
+
+        // Reading passage
+        const passageEl = document.getElementById('reading-passage');
+        if (question.passage) {
+          passageEl.style.display = 'block';
+          document.getElementById('reading-passage-text').textContent = question.passage;
+        } else {
+          passageEl.style.display = 'none';
+        }
+
+        // Image
+        const imgContainer = document.getElementById('question-image-container');
+        if (question.image) {
+          imgContainer.style.display = 'block';
+          document.getElementById('question-image').src = question.image;
+        } else {
+          imgContainer.style.display = 'none';
+        }
+
+        // Audio
+        const audioContainer = document.getElementById('question-audio-container');
+        if (question.audio) {
+          audioContainer.style.display = 'block';
+        } else {
+          audioContainer.style.display = 'none';
+        }
+
+        // Question text
+        document.getElementById('question-text').textContent = question.text;
+
+        // Render choices
+        const grid = document.getElementById('choices-grid');
+        grid.innerHTML = '';
+
+        if (question.type === 'multiple_choice') {
+          grid.className = 'choices-grid';
+          const labels = ['A', 'B', 'C', 'D'];
+          question.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerHTML = `<span class="choice-label">${labels[idx]}</span><span>${opt}</span>`;
+            btn.onclick = () => this.selectAnswer(idx, btn);
+            grid.appendChild(btn);
+          });
+        } else if (question.type === 'true_false') {
+          grid.className = 'tf-grid';
+          const trueBtn = document.createElement('button');
+          trueBtn.className = 'choice-btn tf-btn true-btn';
+          trueBtn.innerHTML = '✅ True';
+          trueBtn.onclick = () => this.selectAnswer(true, trueBtn);
+          const falseBtn = document.createElement('button');
+          falseBtn.className = 'choice-btn tf-btn false-btn';
+          falseBtn.innerHTML = '❌ False';
+          falseBtn.onclick = () => this.selectAnswer(false, falseBtn);
+          grid.appendChild(trueBtn);
+          grid.appendChild(falseBtn);
+        } else if (question.type === 'fill_blank') {
+          grid.className = 'fill-blank-container';
+          grid.innerHTML = `
+            <input type="text" class="fill-blank-input" id="fill-blank-input" placeholder="Type your answer..." autocomplete="off">
+            <br>
+            <button class="fill-blank-submit" onclick="GameEngine.submitFillBlank()">Submit Answer</button>`;
+          setTimeout(() => document.getElementById('fill-blank-input')?.focus(), 100);
+        }
+
+        // Animate in
+        document.getElementById('question-card').style.animation = 'none';
+        requestAnimationFrame(() => {
+          document.getElementById('question-card').style.animation = 'slideUp 0.4s ease-out';
+        });
+
+        // Start timer
+        this.timerStop();
+        this.startTimer();
+      },
+
+      selectAnswer(answer, btnEl) {
+        if (this.isAnswering) return;
+        this.isAnswering = true;
+        this.timerStop();
+
+        const question = this.questions[this.currentIndex];
+        const isCorrect = (answer === question.correct);
+
+        // Highlight correct/incorrect
+        const allBtns = document.querySelectorAll('.choice-btn');
+        allBtns.forEach(btn => btn.classList.add('disabled'));
+
+        if (isCorrect) {
+          btnEl.classList.add('correct');
+          this.score += this.timeRemaining > 0 ? Math.max(10, 100 - (this.timeLimit - this.timeRemaining) * 2) : 10;
+          this.updateScore();
+        } else {
+          btnEl.classList.add('incorrect');
+          // Highlight the correct one
+          if (question.type === 'multiple_choice') {
+            allBtns[question.correct]?.classList.add('correct');
+          } else if (question.type === 'true_false') {
+            allBtns.forEach(btn => {
+              if ((question.correct === true && btn.textContent.includes('True')) ||
+                  (question.correct === false && btn.textContent.includes('False'))) {
+                btn.classList.add('correct');
+              }
+            });
+          }
+          this.lives--;
+          this.renderLives();
+        }
+
+        this.answers.push({ question, userAnswer: answer, correct: isCorrect });
+
+        const feedbackTitle = isCorrect ? 'Correct! 🎉' : 'Not quite! 😅';
+        this.showFeedback(isCorrect, feedbackTitle, question.explanation || '');
+
+        if (this.lives <= 0) {
+          setTimeout(() => this.endGame(), 2000);
+        }
+      },
+
+      submitFillBlank() {
+        if (this.isAnswering) return;
+        const input = document.getElementById('fill-blank-input');
+        if (!input) return;
+        const answer = input.value.trim();
+        if (!answer) { Toast.error('Please type an answer!'); return; }
+        this.isAnswering = true;
+        this.timerStop();
+
+        const question = this.questions[this.currentIndex];
+        const isCorrect = answer.toLowerCase() === String(question.correct).toLowerCase();
+
+        input.disabled = true;
+        input.style.borderColor = isCorrect ? '#4CAF50' : '#f44336';
+        document.querySelector('.fill-blank-submit').disabled = true;
+
+        if (isCorrect) {
+          this.score += Math.max(10, 100 - (this.timeLimit - this.timeRemaining) * 2);
+          this.updateScore();
+        } else {
+          this.lives--;
+          this.renderLives();
+        }
+
+        this.answers.push({ question, userAnswer: answer, correct: isCorrect });
+        const feedbackTitle = isCorrect ? 'Correct! 🎉' : `Not quite! The answer was: ${question.correct}`;
+        this.showFeedback(isCorrect, feedbackTitle, question.explanation || '');
+
+        if (this.lives <= 0) {
+          setTimeout(() => this.endGame(), 2000);
+        }
+      },
+
+      showFeedback(isCorrect, title, explanation) {
+        const overlay = document.getElementById('feedback-overlay');
+        const content = document.getElementById('feedback-content');
+        content.className = `feedback-content ${isCorrect ? 'correct-feedback' : 'incorrect-feedback'}`;
+        content.innerHTML = `
+          <div class="feedback-icon">${isCorrect ? '🎉' : '💡'}</div>
+          <div class="feedback-text">
+            <div class="feedback-title ${isCorrect ? 'correct-title' : 'incorrect-title'}">${title}</div>
+            <div class="feedback-explanation">${explanation}</div>
+          </div>
+          <button class="feedback-next-btn" onclick="GameEngine.nextQuestion()">Next →</button>`;
+        overlay.style.display = 'block';
+        overlay.style.animation = 'none';
+        requestAnimationFrame(() => { overlay.style.animation = 'slideUpFeedback 0.3s ease-out'; });
+
+        if (isCorrect) {
+          Confetti.launch(20);
+        }
+      },
+
+      nextQuestion() {
+        Confetti.stop();
+        this.currentIndex++;
+        if (this.currentIndex >= this.questions.length || this.lives <= 0) {
+          this.endGame();
+        } else {
+          this.showQuestion();
+        }
+      },
+
+      async endGame() {
+        this.timerStop();
+        Confetti.stop();
+        const totalTime = Math.floor((Date.now() - this.startTime) / 1000);
+        const correctCount = this.answers.filter(a => a.correct).length;
+
+        // Save results for results page
+        const results = {
+          activityId: this.activity.id,
+          activityTitle: this.activity.title,
+          activityIcon: this.activity.icon,
+          score: this.score,
+          correctCount: correctCount,
+          totalQuestions: this.questions.length,
+          totalTime: totalTime,
+          lives: this.lives,
+          answers: this.answers,
+          stars: this.lives >= 3 ? 3 : this.lives >= 2 ? 2 : this.lives >= 1 ? 1 : 0
+        };
+        localStorage.setItem('eduquiz_last_results', JSON.stringify(results));
+
+        // Submit score to API
+        try {
+          const reward = await API.submitScore(this.activity.id, correctCount, this.questions.length, totalTime);
+          if (reward) results.reward = reward;
+          localStorage.setItem('eduquiz_last_results', JSON.stringify(results));
+        } catch (e) {
+          console.error('Failed to submit score:', e);
+        }
+
+        window.location.href = '/results.html';
+      }
+    };
+
+    /* ========== Audio Player ========== */
+    function playQuestionAudio() {
+      const btn = document.getElementById('audio-play-btn');
+      btn.classList.add('playing');
+      btn.textContent = '🔊 Playing...';
+      setTimeout(() => {
+        btn.classList.remove('playing');
+        btn.textContent = '🔊 Play Audio';
+      }, 2000);
+    }
+
+    /* ========== Handle Back Button Confirmation ========== */
+    window.addEventListener('beforeunload', (e) => {
+      if (GameEngine.currentIndex > 0 && GameEngine.currentIndex < GameEngine.questions.length) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    /* ========== Init ========== */
+    document.addEventListener('DOMContentLoaded', () => {
+      Toast.init();
+      if (!API.isLoggedIn()) {
+        Toast.info('Please login to play!');
+        setTimeout(() => window.location.href = '/', 1000);
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const activityId = params.get('id');
+      if (!activityId) {
+        Toast.error('No activity specified!');
+        setTimeout(() => window.location.href = '/', 1000);
+        return;
+      }
+      GameEngine.init(activityId);
+    });
+  </script>
+</body>
+</html>

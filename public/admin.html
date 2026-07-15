@@ -253,7 +253,7 @@
 
   <script>
     /* ========== CSP Bypass: convert onclick attrs to addEventListener ========== */
-    (function(){function c(r){if(!r.querySelectorAll)return;r.querySelectorAll('[onclick]').forEach(function(e){var h=e.getAttribute('onclick');e.removeAttribute('onclick');e.addEventListener('click',function(ev){new Function('event',h).call(e,ev)})})}var o=new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)c(n)})})});if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){c(document);o.observe(document.body,{childList:true,subtree:true})})}else{c(document);o.observe(document.body,{childList:true,subtree:true})}})();
+    (function(){function c(r){if(r&&r.matches&&r.matches('[onclick]')){var h=r.getAttribute('onclick');r.removeAttribute('onclick');r.addEventListener('click',function(ev){new Function('event',h).call(r,ev)})}if(!r.querySelectorAll)return;r.querySelectorAll('[onclick]').forEach(function(e){var h=e.getAttribute('onclick');e.removeAttribute('onclick');e.addEventListener('click',function(ev){new Function('event',h).call(e,ev)})})}var o=new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)c(n)})})});if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){c(document);o.observe(document.body,{childList:true,subtree:true})})}else{c(document);o.observe(document.body,{childList:true,subtree:true})}})();
 
     /* ========== Toast System ========== */
     const Toast = {
@@ -376,10 +376,12 @@
         document.getElementById('modal-body').innerHTML = bodyHtml;
         document.getElementById('modal-footer').innerHTML = footerHtml || '';
         document.getElementById('admin-modal').classList.add('show');
+        document.getElementById('admin-modal').classList.add('active');
       },
 
       closeModal() {
         document.getElementById('admin-modal').classList.remove('show');
+        document.getElementById('admin-modal').classList.remove('active');
       },
 
       renderSection(section) {

@@ -591,7 +591,7 @@ window.AdminApp = {
     const showReading = ['reading'].includes(question?.type || 'text');
 
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    overlay.className = 'modal-overlay active';
     overlay.id = 'question-builder-overlay';
     overlay.innerHTML = `
       <div class="modal question-builder-modal">
@@ -1161,7 +1161,7 @@ window.AdminApp = {
   showModal(title, contentHtml, actions = []) {
     this.closeModal();
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    overlay.className = 'modal-overlay active';
     overlay.id = 'admin-modal-overlay';
 
     const actionsHtml = actions.map(a =>
